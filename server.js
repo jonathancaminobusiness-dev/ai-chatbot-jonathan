@@ -56,10 +56,9 @@ const stmtUpsertMemory = db.prepare(`
   ON CONFLICT(client_id) DO UPDATE SET summary = ?, updated_at = CURRENT_TIMESTAMP
 `);
 const stmtCountMsgs = db.prepare(
-  'SELECT COUNT(*) as count FROM conversations WHERE client_id = ?'
+  'SELECT COUNT(*) as count FROM conversations WHERE client_id = ? AND role = ?'
 );
 
-// Load conversation history for a client
 function getClientMessages(clientId) {
   return stmtGetHistory.all(clientId).map((row) => ({
     role: row.role,
@@ -67,15 +66,14 @@ function getClientMessages(clientId) {
   }));
 }
 
-// Save a message to the database
 function saveMessage(clientId, role, content) {
   stmtInsertMsg.run(clientId, role, content);
 }
 
-// Generate a summary of the conversation (runs every 10 messages)
+// Generate summary after every 2 user messages
 async function updateClientMemory(clientId) {
-  const msgCount = stmtCountMsgs.get(clientId).count;
-  if (msgCount > 0 && msgCount % 10 === 0) {
+  const userMsgCount = stmtCountMsgs.get(clientId, 'user').count;
+  if (userMsgCount >= 2) {
     const recent = stmtGetRecent.all(clientId).reverse();
     const convo = recent
       .map((m) => `${m.role === 'user' ? 'Cliente' : 'Juma'}: ${m.content}`)
@@ -85,7 +83,7 @@ async function updateClientMemory(clientId) {
       const result = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 200,
-        system: 'Resuma em 2-3 frases os pontos principais sobre este cliente: o que ele faz, quais problemas tem, e em que etapa da conversa está. Apenas fatos, sem opinião.',
+        system: 'Resuma em 2-3 frases curtas os pontos principais sobre este cliente: nome (se disse), o que ele faz, como consegue clientes, quais problemas tem, e em que etapa da conversa está. Apenas fatos, sem opinião.',
         messages: [{ role: 'user', content: convo }],
       });
       const summary = result.content[0].text;
@@ -96,7 +94,6 @@ async function updateClientMemory(clientId) {
   }
 }
 
-// Build system prompt with client memory
 function buildSystemPrompt(clientId) {
   const memory = stmtGetMemory.get(clientId);
   if (memory) {
@@ -105,7 +102,61 @@ function buildSystemPrompt(clientId) {
   return SYSTEM_PROMPT;
 }
 
-// --- Webhook endpoint ---
+// --- Greeting endpoint ---
+app.post('/webhook/greeting', async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    const memory = stmtGetMemory.get(sessionId);
+    const userMsgCount = stmtCountMsgs.get(sessionId, 'user').count;
+
+    if (memory && userMsgCount > 0) {
+      // Known client — generate personalized greeting
+      const result = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 150,
+        system: `Você é Juma, assistente do Jonathan. Um cliente que já conversou com você antes está voltando. Gere uma saudação curta e calorosa mostrando que você lembra dele. Use [BREAK] para separar mensagens curtas. Texto puro, sem markdown. Exemplo: "Oi de novo! 😊 Lembro de você.[BREAK]Como tá indo com a construtora?"`,
+        messages: [
+          {
+            role: 'user',
+            content: `Informações que tenho sobre este cliente: ${memory.summary}. Gere a saudação de boas-vindas.`,
+          },
+        ],
+      });
+
+      const greeting = result.content[0].text;
+      const parts = greeting
+        .split('[BREAK]')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+
+      res.json({ returning: true, messages: parts });
+    } else {
+      // New client — default greeting
+      res.json({
+        returning: false,
+        messages: [
+          'Oi 😊 eu sou a Juma, assistente do Jonathan.',
+          'Me conta rapidinho, você trabalha com o quê aí nos EUA?',
+        ],
+      });
+    }
+  } catch (error) {
+    console.error('Greeting error:', error.message);
+    res.json({
+      returning: false,
+      messages: [
+        'Oi 😊 eu sou a Juma, assistente do Jonathan.',
+        'Me conta rapidinho, você trabalha com o quê aí nos EUA?',
+      ],
+    });
+  }
+});
+
+// --- Chat endpoint ---
 app.post('/webhook/chat', async (req, res) => {
   try {
     const { sessionId, message } = req.body;
@@ -114,16 +165,10 @@ app.post('/webhook/chat', async (req, res) => {
       return res.status(400).json({ error: 'sessionId and message are required' });
     }
 
-    // Save user message
     saveMessage(sessionId, 'user', message);
-
-    // Load full conversation history
     const messages = getClientMessages(sessionId);
-
-    // Build prompt with memory context
     const systemPrompt = buildSystemPrompt(sessionId);
 
-    // Call Claude
     const completion = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
@@ -132,14 +177,11 @@ app.post('/webhook/chat', async (req, res) => {
     });
 
     let assistantMessage = completion.content[0].text;
-
-    // Save assistant response
     saveMessage(sessionId, 'assistant', assistantMessage);
 
-    // Update memory summary in background
+    // Update memory in background
     updateClientMemory(sessionId);
 
-    // Split into multiple messages and replace WhatsApp placeholder
     const whatsappButton = '<a href="https://wa.me/5521974749532" target="_blank" style="display:inline-block;background:#25D366;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:4px;">💬 Falar no WhatsApp</a>';
     const parts = assistantMessage
       .split('[BREAK]')
@@ -154,7 +196,6 @@ app.post('/webhook/chat', async (req, res) => {
   }
 });
 
-// --- Start server ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Juma chatbot running at http://localhost:${PORT}`);

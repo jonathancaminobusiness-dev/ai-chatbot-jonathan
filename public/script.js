@@ -23,10 +23,7 @@
     chatWindow.classList.toggle('hidden', !isOpen);
     if (isOpen && !greeted) {
       greeted = true;
-      addMessage('bot', 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.');
-      setTimeout(() => {
-        addMessage('bot', 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA a\u00ED nos EUA?');
-      }, 600);
+      fetchGreeting();
     }
     if (isOpen) chatInput.focus();
   });
@@ -80,6 +77,26 @@
         removeTyping(typingEl);
       }
       addMessage('bot', messages[i]);
+    }
+  }
+
+  async function fetchGreeting() {
+    const typingEl = showTyping();
+    try {
+      const res = await fetch('/webhook/greeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      removeTyping(typingEl);
+      if (data.messages) {
+        await showMessagesSequentially(data.messages);
+      }
+    } catch {
+      removeTyping(typingEl);
+      addMessage('bot', 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.');
+      addMessage('bot', 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA a\u00ED nos EUA?');
     }
   }
 

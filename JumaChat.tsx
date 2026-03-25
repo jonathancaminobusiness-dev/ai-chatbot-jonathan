@@ -33,18 +33,34 @@ export function JumaChat() {
   useEffect(() => {
     if (isOpen && !greeted) {
       setGreeted(true);
-      setMessages([
-        { type: 'bot', text: 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.' },
-      ]);
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          { type: 'bot', text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA a\u00ED nos EUA?' },
-        ]);
-      }, 600);
+      fetchGreeting();
     }
     if (isOpen) inputRef.current?.focus();
   }, [isOpen, greeted]);
+
+  async function fetchGreeting() {
+    setLoading(true);
+    try {
+      const res = await fetch(WEBHOOK_URL.replace('/chat', '/greeting'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sessionId.current }),
+      });
+      const data = await res.json();
+      if (data.messages && data.messages.length > 0) {
+        for (let i = 0; i < data.messages.length; i++) {
+          if (i > 0) await delay(600);
+          setMessages((prev) => [...prev, { type: 'bot', text: data.messages[i] }]);
+        }
+      }
+    } catch {
+      setMessages([
+        { type: 'bot', text: 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.' },
+        { type: 'bot', text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA a\u00ED nos EUA?' },
+      ]);
+    }
+    setLoading(false);
+  }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
