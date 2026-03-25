@@ -76,8 +76,8 @@ app.post('/webhook/chat', async (req, res) => {
     // Return array of messages
     res.json({ messages: parts });
   } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    console.error('Error:', error.message, error.status, error.error);
+    res.status(500).json({ error: 'Erro interno do servidor', detail: error.message });
   }
 });
 
