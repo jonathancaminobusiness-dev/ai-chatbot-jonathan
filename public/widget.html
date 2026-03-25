@@ -59,10 +59,10 @@
       const chatMessages = document.getElementById('chat-messages');
       const chatSend = document.getElementById('chat-send');
 
-      let sessionId = sessionStorage.getItem('juma_session');
+      let sessionId = localStorage.getItem('juma_session');
       if (!sessionId) {
         sessionId = crypto.randomUUID();
-        sessionStorage.setItem('juma_session', sessionId);
+        localStorage.setItem('juma_session', sessionId);
       }
 
       // Auto-greet

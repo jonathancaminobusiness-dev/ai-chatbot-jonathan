@@ -8,10 +8,10 @@
   const chatSend = document.getElementById('chat-send');
 
   // Generate unique session ID per visitor
-  let sessionId = sessionStorage.getItem('juma_session');
+  let sessionId = localStorage.getItem('juma_session');
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    sessionStorage.setItem('juma_session', sessionId);
+    localStorage.setItem('juma_session', sessionId);
   }
 
   let isOpen = false;

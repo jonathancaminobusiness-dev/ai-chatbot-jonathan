@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
+const Database = require('better-sqlite3');
 const path = require('path');
 const { SYSTEM_PROMPT } = require('./system-prompt');
 
@@ -16,41 +17,95 @@ if (!apiKey) {
 }
 const anthropic = new Anthropic({ apiKey });
 
-// --- Conversation Memory (equivalent to n8n Memory node) ---
-const conversationMemory = new Map();
-const SESSION_TTL = 60 * 60 * 1000; // 1 hour
+// --- SQLite Database for persistent memory ---
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'juma.db');
+const db = new Database(dbPath);
 
-function getSession(sessionId) {
-  const session = conversationMemory.get(sessionId);
-  if (session) {
-    session.lastAccess = Date.now();
-    return session.messages;
-  }
-  const messages = [];
-  conversationMemory.set(sessionId, { messages, lastAccess: Date.now() });
-  return messages;
+db.exec(`
+  CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_client_id ON conversations(client_id);
+
+  CREATE TABLE IF NOT EXISTS client_memory (
+    client_id TEXT PRIMARY KEY,
+    summary TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+const stmtInsertMsg = db.prepare(
+  'INSERT INTO conversations (client_id, role, content) VALUES (?, ?, ?)'
+);
+const stmtGetHistory = db.prepare(
+  'SELECT role, content FROM conversations WHERE client_id = ? ORDER BY created_at ASC'
+);
+const stmtGetRecent = db.prepare(
+  'SELECT role, content FROM conversations WHERE client_id = ? ORDER BY created_at DESC LIMIT 20'
+);
+const stmtGetMemory = db.prepare(
+  'SELECT summary FROM client_memory WHERE client_id = ?'
+);
+const stmtUpsertMemory = db.prepare(`
+  INSERT INTO client_memory (client_id, summary, updated_at)
+  VALUES (?, ?, CURRENT_TIMESTAMP)
+  ON CONFLICT(client_id) DO UPDATE SET summary = ?, updated_at = CURRENT_TIMESTAMP
+`);
+const stmtCountMsgs = db.prepare(
+  'SELECT COUNT(*) as count FROM conversations WHERE client_id = ?'
+);
+
+// Load conversation history for a client
+function getClientMessages(clientId) {
+  return stmtGetHistory.all(clientId).map((row) => ({
+    role: row.role,
+    content: row.content,
+  }));
 }
 
-// Cleanup expired sessions every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, session] of conversationMemory) {
-    if (now - session.lastAccess > SESSION_TTL) {
-      conversationMemory.delete(id);
+// Save a message to the database
+function saveMessage(clientId, role, content) {
+  stmtInsertMsg.run(clientId, role, content);
+}
+
+// Generate a summary of the conversation (runs every 10 messages)
+async function updateClientMemory(clientId) {
+  const msgCount = stmtCountMsgs.get(clientId).count;
+  if (msgCount > 0 && msgCount % 10 === 0) {
+    const recent = stmtGetRecent.all(clientId).reverse();
+    const convo = recent
+      .map((m) => `${m.role === 'user' ? 'Cliente' : 'Juma'}: ${m.content}`)
+      .join('\n');
+
+    try {
+      const result = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: 'Resuma em 2-3 frases os pontos principais sobre este cliente: o que ele faz, quais problemas tem, e em que etapa da conversa está. Apenas fatos, sem opinião.',
+        messages: [{ role: 'user', content: convo }],
+      });
+      const summary = result.content[0].text;
+      stmtUpsertMemory.run(clientId, summary, summary);
+    } catch (err) {
+      console.error('Error updating memory:', err.message);
     }
   }
-}, 10 * 60 * 1000);
+}
 
-// Debug endpoint (remove after fixing)
-app.get('/debug', (req, res) => {
-  res.json({
-    hasApiKey: !!process.env.ANTHROPIC_API_KEY,
-    keyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'NOT SET',
-    envVars: Object.keys(process.env).filter((k) => k.includes('ANTHROPIC') || k.includes('API')),
-  });
-});
+// Build system prompt with client memory
+function buildSystemPrompt(clientId) {
+  const memory = stmtGetMemory.get(clientId);
+  if (memory) {
+    return `${SYSTEM_PROMPT}\n\nMEMÓRIA SOBRE ESTE CLIENTE (de conversas anteriores):\n${memory.summary}\nUse essa informação para continuar a conversa de forma natural, sem repetir perguntas que já foram respondidas.`;
+  }
+  return SYSTEM_PROMPT;
+}
 
-// --- Webhook endpoint (equivalent to n8n Webhook node) ---
+// --- Webhook endpoint ---
 app.post('/webhook/chat', async (req, res) => {
   try {
     const { sessionId, message } = req.body;
@@ -59,24 +114,30 @@ app.post('/webhook/chat', async (req, res) => {
       return res.status(400).json({ error: 'sessionId and message are required' });
     }
 
-    // Load conversation memory
-    const messages = getSession(sessionId);
+    // Save user message
+    saveMessage(sessionId, 'user', message);
 
-    // Add user message to memory
-    messages.push({ role: 'user', content: message });
+    // Load full conversation history
+    const messages = getClientMessages(sessionId);
 
-    // Call AI Agent (Claude Haiku)
+    // Build prompt with memory context
+    const systemPrompt = buildSystemPrompt(sessionId);
+
+    // Call Claude
     const completion = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: messages,
     });
 
     let assistantMessage = completion.content[0].text;
 
-    // Store original in memory (without HTML)
-    messages.push({ role: 'assistant', content: assistantMessage });
+    // Save assistant response
+    saveMessage(sessionId, 'assistant', assistantMessage);
+
+    // Update memory summary in background
+    updateClientMemory(sessionId);
 
     // Split into multiple messages and replace WhatsApp placeholder
     const whatsappButton = '<a href="https://wa.me/5521974749532" target="_blank" style="display:inline-block;background:#25D366;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:4px;">💬 Falar no WhatsApp</a>';
@@ -86,7 +147,6 @@ app.post('/webhook/chat', async (req, res) => {
       .filter((p) => p.length > 0)
       .map((p) => p.replace(/\[WHATSAPP_BUTTON\]/g, whatsappButton));
 
-    // Return array of messages
     res.json({ messages: parts });
   } catch (error) {
     console.error('Error:', error.message, error.status, error.error);
