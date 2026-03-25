@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juma - Painel de Aprendizados</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 32px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .header .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #25D366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 22px;
+      color: white;
+    }
+    .header h1 {
+      font-size: 24px;
+      color: white;
+    }
+    .header p {
+      color: #888;
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+    }
+    .stat-card.eficaz { border-left: 4px solid #25D366; }
+    .stat-card.melhorar { border-left: 4px solid #f59e0b; }
+    .stat-card.objecao { border-left: 4px solid #ef4444; }
+    .stat-card.total { border-left: 4px solid #3b82f6; }
+
+    .chart-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 768px) {
+      .chart-section { grid-template-columns: 1fr; }
+    }
+    .chart-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .chart-card h3 {
+      font-size: 16px;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      height: 180px;
+      padding-top: 10px;
+    }
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar {
+      width: 100%;
+      max-width: 60px;
+      border-radius: 6px 6px 0 0;
+      min-height: 4px;
+      transition: height 0.5s ease;
+    }
+    .bar.eficaz { background: #25D366; }
+    .bar.melhorar { background: #f59e0b; }
+    .bar.objecao { background: #ef4444; }
+    .bar-label {
+      font-size: 11px;
+      color: #888;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .bar-value {
+      font-size: 13px;
+      color: white;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .donut-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    .donut-svg { width: 160px; height: 160px; }
+    .donut-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .learnings-section {
+      margin-top: 16px;
+    }
+    .learnings-section h2 {
+      font-size: 18px;
+      color: white;
+      margin-bottom: 16px;
+    }
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .filter-tab {
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid #333;
+      background: transparent;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .filter-tab:hover { border-color: #555; color: white; }
+    .filter-tab.active { background: #25D366; border-color: #25D366; color: white; }
+
+    .learning-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .learning-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .learning-badge.eficaz { background: rgba(37,211,102,0.15); color: #25D366; }
+    .learning-badge.melhorar { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .learning-badge.objecao { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .learning-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #ccc;
+    }
+    .learning-date {
+      font-size: 11px;
+      color: #555;
+      margin-top: 6px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #555;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state p { font-size: 15px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="avatar">J</div>
+    <div>
+      <h1>Painel de Aprendizados</h1>
+      <p>Juma - Assistente do Jonathan</p>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="chart-section">
+    <div class="chart-card">
+      <h3>Distribuição por Tipo</h3>
+      <div class="donut-container" id="donut-chart"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Aprendizados por Categoria</h3>
+      <div class="bar-chart" id="bar-chart"></div>
+    </div>
+  </div>
+
+  <div class="learnings-section">
+    <h2>Todos os Aprendizados</h2>
+    <div class="filter-tabs" id="filters"></div>
+    <div id="learnings-list"></div>
+  </div>
+
+  <script>
+    let allLearnings = [];
+
+    async function load() {
+      try {
+        const res = await fetch('/admin/learnings');
+        const data = await res.json();
+        allLearnings = data.learnings || [];
+        render();
+      } catch {
+        document.getElementById('learnings-list').innerHTML =
+          '<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar dados</p></div>';
+      }
+    }
+
+    function render() {
+      const eficaz = allLearnings.filter((l) => l.type === 'EFICAZ').length;
+      const melhorar = allLearnings.filter((l) => l.type === 'MELHORAR').length;
+      const objecao = allLearnings.filter((l) => l.type === 'OBJEÇÃO' || l.type === 'OBJECAO').length;
+      const total = allLearnings.length;
+
+      // Stats
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card total"><div class="label">Total</div><div class="value">${total}</div></div>
+        <div class="stat-card eficaz"><div class="label">Eficaz</div><div class="value">${eficaz}</div></div>
+        <div class="stat-card melhorar"><div class="label">A Melhorar</div><div class="value">${melhorar}</div></div>
+        <div class="stat-card objecao"><div class="label">Objeções</div><div class="value">${objecao}</div></div>
+      `;
+
+      // Donut chart
+      renderDonut(eficaz, melhorar, objecao, total);
+
+      // Bar chart
+      renderBars(eficaz, melhorar, objecao);
+
+      // Filters
+      document.getElementById('filters').innerHTML = `
+        <button class="filter-tab active" onclick="filter('all', this)">Todos (${total})</button>
+        <button class="filter-tab" onclick="filter('EFICAZ', this)">Eficaz (${eficaz})</button>
+        <button class="filter-tab" onclick="filter('MELHORAR', this)">Melhorar (${melhorar})</button>
+        <button class="filter-tab" onclick="filter('OBJEÇÃO', this)">Objeções (${objecao})</button>
+      `;
+
+      renderList(allLearnings);
+    }
+
+    function renderDonut(e, m, o, total) {
+      const container = document.getElementById('donut-chart');
+      if (total === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Sem dados ainda</p></div>';
+        return;
+      }
+
+      const r = 60, cx = 80, cy = 80, stroke = 18;
+      const circumference = 2 * Math.PI * r;
+      const segments = [
+        { value: e, color: '#25D366', label: 'Eficaz' },
+        { value: m, color: '#f59e0b', label: 'Melhorar' },
+        { value: o, color: '#ef4444', label: 'Objeções' },
+      ];
+
+      let offset = 0;
+      let paths = '';
+      segments.forEach((seg) => {
+        const pct = seg.value / total;
+        const dash = pct * circumference;
+        paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" />`;
+        offset += dash;
+      });
+
+      const legend = segments
+        .map((s) => `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}: ${s.value} (${total > 0 ? Math.round((s.value / total) * 100) : 0}%)</div>`)
+        .join('');
+
+      container.innerHTML = `
+        <svg class="donut-svg" viewBox="0 0 160 160">${paths}<text x="${cx}" y="${cy}" text-anchor="middle" dy="6" fill="white" font-size="22" font-weight="700">${total}</text></svg>
+        <div class="donut-legend">${legend}</div>
+      `;
+    }
+
+    function renderBars(e, m, o) {
+      const container = document.getElementById('bar-chart');
+      const max = Math.max(e, m, o, 1);
+      const items = [
+        { value: e, cls: 'eficaz', label: 'Eficaz' },
+        { value: m, cls: 'melhorar', label: 'Melhorar' },
+        { value: o, cls: 'objecao', label: 'Objeções' },
+      ];
+
+      container.innerHTML = items
+        .map((i) => `
+          <div class="bar-group">
+            <div class="bar-value">${i.value}</div>
+            <div class="bar ${i.cls}" style="height: ${Math.max((i.value / max) * 140, 4)}px"></div>
+            <div class="bar-label">${i.label}</div>
+          </div>
+        `)
+        .join('');
+    }
+
+    function filter(type, btn) {
+      document.querySelectorAll('.filter-tab').forEach((t) => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (type === 'all') {
+        renderList(allLearnings);
+      } else {
+        renderList(allLearnings.filter((l) => l.type === type || (type === 'OBJEÇÃO' && l.type === 'OBJECAO')));
+      }
+    }
+
+    function renderList(items) {
+      const container = document.getElementById('learnings-list');
+
+      if (items.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🧠</div><p>Nenhum aprendizado ainda. Conforme clientes conversam com a Juma, ela aprende automaticamente.</p></div>';
+        return;
+      }
+
+      container.innerHTML = items
+        .map((l) => {
+          const cls = l.type === 'EFICAZ' ? 'eficaz' : l.type === 'MELHORAR' ? 'melhorar' : 'objecao';
+          const label = l.type === 'EFICAZ' ? 'Eficaz' : l.type === 'MELHORAR' ? 'Melhorar' : 'Objeção';
+          const date = new Date(l.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+          return `
+            <div class="learning-card">
+              <div class="learning-badge ${cls}">${label}</div>
+              <div>
+                <div class="learning-text">${l.insight}</div>
+                <div class="learning-date">${date}</div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    load();
+  </script>
+</body>
+</html>

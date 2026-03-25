@@ -281,7 +281,12 @@ app.post('/webhook/chat', async (req, res) => {
   }
 });
 
-// --- Admin: view learnings ---
+// --- Admin: dashboard page ---
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// --- Admin: API for learnings data ---
 app.get('/admin/learnings', (req, res) => {
   const all = db.prepare('SELECT * FROM learnings ORDER BY created_at DESC').all();
   res.json({ total: all.length, learnings: all });
