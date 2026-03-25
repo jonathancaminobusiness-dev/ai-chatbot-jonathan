@@ -73,7 +73,7 @@ function saveMessage(clientId, role, content) {
 // Generate summary after every 2 user messages
 async function updateClientMemory(clientId) {
   const userMsgCount = stmtCountMsgs.get(clientId, 'user').count;
-  if (userMsgCount >= 2) {
+  if (userMsgCount >= 1) {
     const recent = stmtGetRecent.all(clientId).reverse();
     const convo = recent
       .map((m) => `${m.role === 'user' ? 'Cliente' : 'Juma'}: ${m.content}`)
@@ -179,8 +179,8 @@ app.post('/webhook/chat', async (req, res) => {
     let assistantMessage = completion.content[0].text;
     saveMessage(sessionId, 'assistant', assistantMessage);
 
-    // Update memory in background
-    updateClientMemory(sessionId);
+    // Update memory before responding
+    await updateClientMemory(sessionId);
 
     const whatsappButton = '<a href="https://wa.me/5521974749532" target="_blank" style="display:inline-block;background:#25D366;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:4px;">💬 Falar no WhatsApp</a>';
     const parts = assistantMessage
