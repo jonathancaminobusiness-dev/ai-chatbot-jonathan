@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juma - Memória dos Clientes</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 32px;
+    }
+    a { color: #25D366; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .header .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #25D366;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 22px;
+      color: white;
+    }
+    .header h1 { font-size: 24px; color: white; }
+    .header p { color: #888; font-size: 14px; }
+    .nav {
+      margin-bottom: 32px;
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+    }
+    .nav a {
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: #161616;
+      border: 1px solid #222;
+    }
+    .nav a:hover, .nav a.active {
+      background: #25D366;
+      border-color: #25D366;
+      color: white;
+      text-decoration: none;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 4px solid #25D366;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: white;
+    }
+    .stat-card.msgs { border-left-color: #3b82f6; }
+    .stat-card.active { border-left-color: #f59e0b; }
+
+    .client-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .client-card {
+      background: #161616;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .client-card:hover { border-color: #25D366; }
+    .client-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .client-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .client-id {
+      font-size: 13px;
+      color: #888;
+      font-family: monospace;
+    }
+    .client-msgs-count {
+      font-size: 11px;
+      color: #25D366;
+      background: rgba(37,211,102,0.12);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .client-summary {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #ccc;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #111;
+      border-radius: 8px;
+      border-left: 3px solid #25D366;
+    }
+    .client-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #555;
+    }
+    .client-last-msg {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #161616;
+      border: 1px solid #333;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 { font-size: 16px; color: white; }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 22px;
+      cursor: pointer;
+    }
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-msg {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: #25D366;
+      color: white;
+    }
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: #222;
+      color: #e0e0e0;
+    }
+    .chat-msg .time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #555;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+    .search-bar {
+      margin-bottom: 24px;
+    }
+    .search-bar input {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #161616;
+      color: white;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-bar input:focus { border-color: #25D366; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="avatar">J</div>
+    <div>
+      <h1>Memória dos Clientes</h1>
+      <p>Juma - Assistente do Jonathan</p>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="/admin">Aprendizados</a>
+    <a href="/admin/clients" class="active">Clientes</a>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="Buscar por resumo ou ID do cliente..." oninput="filterClients(this.value)">
+  </div>
+
+  <div class="client-grid" id="client-grid"></div>
+
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modal-title">Histórico de Conversa</h3>
+        <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    let allClients = [];
+
+    async function load() {
+      try {
+        const res = await fetch('/admin/clients/data');
+        const data = await res.json();
+        allClients = data.clients || [];
+        render();
+      } catch {
+        document.getElementById('client-grid').innerHTML =
+          '<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar dados</p></div>';
+      }
+    }
+
+    function render() {
+      const totalClients = allClients.length;
+      const totalMsgs = allClients.reduce((s, c) => s + c.total_messages, 0);
+      const recent = allClients.filter((c) => {
+        const d = new Date(c.last_active);
+        const now = new Date();
+        return (now - d) < 24 * 60 * 60 * 1000;
+      }).length;
+
+      document.getElementById('stats').innerHTML = `
+        <div class="stat-card"><div class="label">Total Clientes</div><div class="value">${totalClients}</div></div>
+        <div class="stat-card msgs"><div class="label">Total Mensagens</div><div class="value">${totalMsgs}</div></div>
+        <div class="stat-card active"><div class="label">Ativos (24h)</div><div class="value">${recent}</div></div>
+      `;
+
+      renderCards(allClients);
+    }
+
+    function renderCards(clients) {
+      const grid = document.getElementById('client-grid');
+
+      if (clients.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="icon">👤</div><p>Nenhum cliente com memória ainda. Conforme clientes conversam com a Juma, eles aparecem aqui.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = clients.map((c) => {
+        const shortId = c.id.substring(0, 8);
+        const date = formatDate(c.last_active || c.updated_at);
+        const lastMsg = c.last_message ? (c.last_message.length > 60 ? c.last_message.substring(0, 60) + '...' : c.last_message) : '';
+        return `
+          <div class="client-card" onclick="openHistory('${c.id}')">
+            <div class="client-header">
+              <div class="client-avatar">👤</div>
+              <div>
+                <div class="client-id">${shortId}...</div>
+              </div>
+              <div class="client-msgs-count">${c.total_messages} msgs</div>
+            </div>
+            <div class="client-summary">${c.summary}</div>
+            ${lastMsg ? `<div class="client-last-msg">"${lastMsg}"</div>` : ''}
+            <div class="client-meta">
+              <span>Última atividade: ${date}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterClients(query) {
+      const q = query.toLowerCase();
+      const filtered = allClients.filter((c) =>
+        c.summary.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
+      );
+      renderCards(filtered);
+    }
+
+    async function openHistory(clientId) {
+      const modal = document.getElementById('modal');
+      const body = document.getElementById('modal-body');
+      const title = document.getElementById('modal-title');
+
+      title.textContent = 'Histórico — ' + clientId.substring(0, 8) + '...';
+      body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Carregando...</div>';
+      modal.classList.add('open');
+
+      try {
+        const res = await fetch('/admin/clients/' + clientId + '/history');
+        const data = await res.json();
+
+        if (data.messages.length === 0) {
+          body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Sem mensagens</div>';
+          return;
+        }
+
+        body.innerHTML = data.messages.map((m) => {
+          const time = formatDate(m.created_at);
+          return `
+            <div class="chat-msg ${m.role}">
+              ${m.content}
+              <div class="time">${time}</div>
+            </div>
+          `;
+        }).join('');
+
+        body.scrollTop = body.scrollHeight;
+      } catch {
+        body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Erro ao carregar</div>';
+      }
+    }
+
+    function closeModal(e) {
+      if (e.target === e.currentTarget) {
+        document.getElementById('modal').classList.remove('open');
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    load();
+  </script>
+</body>
+</html>

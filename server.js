@@ -283,6 +283,44 @@ app.get('/admin/learnings', async (req, res) => {
   res.json({ total: rows.length, learnings: rows });
 });
 
+app.get('/admin/clients', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-clients.html'));
+});
+
+app.get('/admin/clients/data', async (req, res) => {
+  const { rows: memories } = await db.execute(
+    'SELECT client_id, summary, updated_at FROM client_memory ORDER BY updated_at DESC'
+  );
+  const clients = [];
+  for (const m of memories) {
+    const { rows: countRows } = await db.execute({
+      sql: "SELECT COUNT(*) as count FROM conversations WHERE client_id = ?",
+      args: [m.client_id],
+    });
+    const { rows: lastMsg } = await db.execute({
+      sql: "SELECT content, created_at FROM conversations WHERE client_id = ? AND role = 'user' ORDER BY created_at DESC LIMIT 1",
+      args: [m.client_id],
+    });
+    clients.push({
+      id: m.client_id,
+      summary: m.summary,
+      updated_at: m.updated_at,
+      total_messages: Number(countRows[0].count),
+      last_message: lastMsg.length > 0 ? lastMsg[0].content : null,
+      last_active: lastMsg.length > 0 ? lastMsg[0].created_at : m.updated_at,
+    });
+  }
+  res.json({ total: clients.length, clients });
+});
+
+app.get('/admin/clients/:id/history', async (req, res) => {
+  const { rows } = await db.execute({
+    sql: 'SELECT role, content, created_at FROM conversations WHERE client_id = ? ORDER BY created_at ASC',
+    args: [req.params.id],
+  });
+  res.json({ messages: rows });
+});
+
 // --- Start ---
 const PORT = process.env.PORT || 3000;
 initDb().then(() => {

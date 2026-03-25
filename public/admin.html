@@ -215,6 +215,11 @@
     }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state p { font-size: 15px; }
+    a { color: #25D366; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .nav { margin-bottom: 32px; display: flex; gap: 16px; font-size: 14px; }
+    .nav a { padding: 6px 14px; border-radius: 8px; background: #161616; border: 1px solid #222; }
+    .nav a:hover, .nav a.active { background: #25D366; border-color: #25D366; color: white; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -225,6 +230,11 @@
       <h1>Painel de Aprendizados</h1>
       <p>Juma - Assistente do Jonathan</p>
     </div>
+  </div>
+
+  <div class="nav">
+    <a href="/admin" class="active">Aprendizados</a>
+    <a href="/admin/clients">Clientes</a>
   </div>
 
   <div class="stats" id="stats"></div>
