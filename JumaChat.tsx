@@ -56,7 +56,7 @@ export function JumaChat() {
     } catch {
       setMessages([
         { type: 'bot', text: 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.' },
-        { type: 'bot', text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA a\u00ED nos EUA?' },
+        { type: 'bot', text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA?' },
       ]);
     }
     setLoading(false);

@@ -140,7 +140,7 @@ app.post('/webhook/greeting', async (req, res) => {
         returning: false,
         messages: [
           'Oi 😊 eu sou a Juma, assistente do Jonathan.',
-          'Me conta rapidinho, você trabalha com o quê aí nos EUA?',
+          'Me conta rapidinho, você trabalha com o quê?',
         ],
       });
     }
@@ -150,7 +150,7 @@ app.post('/webhook/greeting', async (req, res) => {
       returning: false,
       messages: [
         'Oi 😊 eu sou a Juma, assistente do Jonathan.',
-        'Me conta rapidinho, você trabalha com o quê aí nos EUA?',
+        'Me conta rapidinho, você trabalha com o quê?',
       ],
     });
   }
