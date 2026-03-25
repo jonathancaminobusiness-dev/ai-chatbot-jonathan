@@ -10,7 +10,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const apiKey = process.env.ANTHROPIC_API_KEY;
+if (!apiKey) {
+  console.error('WARNING: ANTHROPIC_API_KEY not found in environment variables!');
+}
+const anthropic = new Anthropic({ apiKey });
 
 // --- Conversation Memory (equivalent to n8n Memory node) ---
 const conversationMemory = new Map();
