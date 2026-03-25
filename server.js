@@ -17,7 +17,7 @@ if (!apiKey) {
 }
 const anthropic = new Anthropic({ apiKey });
 
-// --- SQLite Database for persistent memory ---
+// --- SQLite Database ---
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'juma.db');
 const db = new Database(dbPath);
 
@@ -35,6 +35,14 @@ db.exec(`
     client_id TEXT PRIMARY KEY,
     summary TEXT NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS learnings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL,
+    insight TEXT NOT NULL,
+    source_client TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 `);
 
@@ -58,6 +66,15 @@ const stmtUpsertMemory = db.prepare(`
 const stmtCountMsgs = db.prepare(
   'SELECT COUNT(*) as count FROM conversations WHERE client_id = ? AND role = ?'
 );
+const stmtInsertLearning = db.prepare(
+  'INSERT INTO learnings (type, insight, source_client) VALUES (?, ?, ?)'
+);
+const stmtGetLearnings = db.prepare(
+  'SELECT DISTINCT insight FROM learnings ORDER BY created_at DESC LIMIT 15'
+);
+const stmtCountLearnings = db.prepare(
+  'SELECT COUNT(*) as count FROM learnings'
+);
 
 function getClientMessages(clientId) {
   return stmtGetHistory.all(clientId).map((row) => ({
@@ -70,7 +87,7 @@ function saveMessage(clientId, role, content) {
   stmtInsertMsg.run(clientId, role, content);
 }
 
-// Generate summary after every 2 user messages
+// --- Client Memory ---
 async function updateClientMemory(clientId) {
   const userMsgCount = stmtCountMsgs.get(clientId, 'user').count;
   if (userMsgCount >= 1) {
@@ -94,12 +111,79 @@ async function updateClientMemory(clientId) {
   }
 }
 
+// --- Self-Learning System ---
+async function analyzeConversation(clientId) {
+  const userMsgCount = stmtCountMsgs.get(clientId, 'user').count;
+
+  // Analyze after every 4 user messages
+  if (userMsgCount < 4 || userMsgCount % 4 !== 0) return;
+
+  const recent = stmtGetRecent.all(clientId).reverse();
+  const convo = recent
+    .map((m) => `${m.role === 'user' ? 'Cliente' : 'Juma'}: ${m.content}`)
+    .join('\n');
+
+  try {
+    const result = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      system: `Você é um analista de conversas de vendas. Analise esta conversa entre Juma (assistente de vendas) e um cliente.
+
+Identifique de 1 a 3 aprendizados práticos. Foque em:
+- Perguntas que funcionaram bem ou mal
+- Objeções do cliente e como foram tratadas
+- Momentos onde a conversa travou ou fluiu
+- O que poderia ser melhorado na próxima vez
+
+Responda APENAS com os aprendizados, um por linha, no formato:
+TIPO: aprendizado
+
+Tipos possíveis: EFICAZ (algo que funcionou), MELHORAR (algo que pode melhorar), OBJEÇÃO (objeção comum e como lidar)
+
+Exemplo:
+EFICAZ: Perguntar "como você consegue clientes hoje?" gera respostas detalhadas
+MELHORAR: Não fazer duas perguntas na mesma mensagem, o cliente ignora a segunda
+OBJEÇÃO: Quando perguntam preço, redirecionar dizendo que depende do cenário funciona bem`,
+      messages: [{ role: 'user', content: convo }],
+    });
+
+    const lines = result.content[0].text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    for (const line of lines) {
+      const match = line.match(/^(EFICAZ|MELHORAR|OBJEÇÃO):\s*(.+)/i);
+      if (match) {
+        stmtInsertLearning.run(match[1].toUpperCase(), match[2], clientId);
+      }
+    }
+
+    console.log(`Learned ${lines.length} insights from client ${clientId}`);
+  } catch (err) {
+    console.error('Error analyzing conversation:', err.message);
+  }
+}
+
+// --- Build System Prompt with Memory + Learnings ---
 function buildSystemPrompt(clientId) {
+  let prompt = SYSTEM_PROMPT;
+
+  // Add client memory
   const memory = stmtGetMemory.get(clientId);
   if (memory) {
-    return `${SYSTEM_PROMPT}\n\nMEMÓRIA SOBRE ESTE CLIENTE (de conversas anteriores):\n${memory.summary}\nUse essa informação para continuar a conversa de forma natural, sem repetir perguntas que já foram respondidas.`;
+    prompt += `\n\nMEMÓRIA SOBRE ESTE CLIENTE (de conversas anteriores):\n${memory.summary}\nUse essa informação para continuar de forma natural, sem repetir perguntas já respondidas.`;
   }
-  return SYSTEM_PROMPT;
+
+  // Add global learnings
+  const learningCount = stmtCountLearnings.get().count;
+  if (learningCount > 0) {
+    const learnings = stmtGetLearnings.all();
+    const learningText = learnings.map((l) => `- ${l.insight}`).join('\n');
+    prompt += `\n\nAPRENDIZADOS DE CONVERSAS ANTERIORES (aplique esses aprendizados):\n${learningText}`;
+  }
+
+  return prompt;
 }
 
 // --- Greeting endpoint ---
@@ -114,7 +198,6 @@ app.post('/webhook/greeting', async (req, res) => {
     const userMsgCount = stmtCountMsgs.get(sessionId, 'user').count;
 
     if (memory && userMsgCount > 0) {
-      // Known client — generate personalized greeting
       const result = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 150,
@@ -135,7 +218,6 @@ app.post('/webhook/greeting', async (req, res) => {
 
       res.json({ returning: true, messages: parts });
     } else {
-      // New client — default greeting
       res.json({
         returning: false,
         messages: [
@@ -179,8 +261,11 @@ app.post('/webhook/chat', async (req, res) => {
     let assistantMessage = completion.content[0].text;
     saveMessage(sessionId, 'assistant', assistantMessage);
 
-    // Update memory before responding
+    // Update client memory
     await updateClientMemory(sessionId);
+
+    // Analyze conversation for learnings (runs in background)
+    analyzeConversation(sessionId);
 
     const whatsappButton = '<a href="https://wa.me/5521974749532" target="_blank" style="display:inline-block;background:#25D366;color:white;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:4px;">💬 Falar no WhatsApp</a>';
     const parts = assistantMessage
@@ -194,6 +279,12 @@ app.post('/webhook/chat', async (req, res) => {
     console.error('Error:', error.message, error.status, error.error);
     res.status(500).json({ error: 'Erro interno do servidor', detail: error.message });
   }
+});
+
+// --- Admin: view learnings ---
+app.get('/admin/learnings', (req, res) => {
+  const all = db.prepare('SELECT * FROM learnings ORDER BY created_at DESC').all();
+  res.json({ total: all.length, learnings: all });
 });
 
 const PORT = process.env.PORT || 3000;
