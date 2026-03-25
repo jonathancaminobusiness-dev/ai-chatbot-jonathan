@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juma - Assistente do Jonathan</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Chat toggle button -->
+  <button id="chat-toggle" aria-label="Abrir chat">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </button>
+
+  <!-- Chat window -->
+  <div id="chat-window" class="hidden">
+    <div id="chat-header">
+      <div id="chat-header-info">
+        <div id="avatar">J</div>
+        <div>
+          <div id="chat-title">Juma</div>
+          <div id="chat-subtitle">Assistente do Jonathan</div>
+        </div>
+      </div>
+      <button id="chat-close" aria-label="Fechar chat">&times;</button>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <form id="chat-form">
+      <input type="text" id="chat-input" placeholder="Digite sua mensagem..." autocomplete="off">
+      <button type="submit" id="chat-send" aria-label="Enviar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
