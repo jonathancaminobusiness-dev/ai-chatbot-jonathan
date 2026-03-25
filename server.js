@@ -41,6 +41,15 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+// Debug endpoint (remove after fixing)
+app.get('/debug', (req, res) => {
+  res.json({
+    hasApiKey: !!process.env.ANTHROPIC_API_KEY,
+    keyPrefix: process.env.ANTHROPIC_API_KEY ? process.env.ANTHROPIC_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+    envVars: Object.keys(process.env).filter((k) => k.includes('ANTHROPIC') || k.includes('API')),
+  });
+});
+
 // --- Webhook endpoint (equivalent to n8n Webhook node) ---
 app.post('/webhook/chat', async (req, res) => {
   try {
