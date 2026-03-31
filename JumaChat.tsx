@@ -16,35 +16,72 @@ function getSessionId(): string {
   return id;
 }
 
+// Detect language from the site
+function detectLanguage(): string {
+  // Check html lang attribute
+  const htmlLang = document.documentElement.lang?.toLowerCase();
+  if (htmlLang?.startsWith('en')) return 'en';
+  if (htmlLang?.startsWith('pt')) return 'pt';
+
+  // Check for common language toggle patterns in the page
+  const body = document.body.innerText?.toLowerCase() || '';
+  const enKeywords = ['services', 'about us', 'contact', 'pricing', 'get started'];
+  const ptKeywords = ['serviços', 'sobre nós', 'contato', 'preços', 'começar'];
+
+  const enScore = enKeywords.filter((k) => body.includes(k)).length;
+  const ptScore = ptKeywords.filter((k) => body.includes(k)).length;
+
+  return enScore > ptScore ? 'en' : 'pt';
+}
+
 export function JumaChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [greeted, setGreeted] = useState(false);
+  const [language, setLanguage] = useState('pt');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionId = useRef(getSessionId());
+
+  // Re-detect language whenever chat opens
+  useEffect(() => {
+    if (isOpen) {
+      const lang = detectLanguage();
+      setLanguage(lang);
+
+      if (!greeted) {
+        setGreeted(true);
+        fetchGreeting(lang);
+      }
+      inputRef.current?.focus();
+    }
+  }, [isOpen, greeted]);
+
+  // Also watch for language changes while chat is open
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      if (isOpen) {
+        const lang = detectLanguage();
+        setLanguage(lang);
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    return () => observer.disconnect();
+  }, [isOpen]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  useEffect(() => {
-    if (isOpen && !greeted) {
-      setGreeted(true);
-      fetchGreeting();
-    }
-    if (isOpen) inputRef.current?.focus();
-  }, [isOpen, greeted]);
-
-  async function fetchGreeting() {
+  async function fetchGreeting(lang: string) {
     setLoading(true);
     try {
       const res = await fetch(WEBHOOK_URL.replace('/chat', '/greeting'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: sessionId.current }),
+        body: JSON.stringify({ sessionId: sessionId.current, language: lang }),
       });
       const data = await res.json();
       if (data.messages && data.messages.length > 0) {
@@ -54,10 +91,17 @@ export function JumaChat() {
         }
       }
     } catch {
-      setMessages([
-        { type: 'bot', text: 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.' },
-        { type: 'bot', text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA?' },
-      ]);
+      const fallback =
+        lang === 'en'
+          ? [
+              { type: 'bot' as const, text: "Hey \u{1F60A} I'm Juma, Jonathan's assistant." },
+              { type: 'bot' as const, text: 'Quick question \u2014 what do you do for work?' },
+            ]
+          : [
+              { type: 'bot' as const, text: 'Oi \u{1F60A} eu sou a Juma, assistente do Jonathan.' },
+              { type: 'bot' as const, text: 'Me conta rapidinho, voc\u00EA trabalha com o qu\u00EA?' },
+            ];
+      setMessages(fallback);
     }
     setLoading(false);
   }
@@ -78,7 +122,7 @@ export function JumaChat() {
       const res = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: sessionId.current, message: text }),
+        body: JSON.stringify({ sessionId: sessionId.current, message: text, language }),
         signal: controller.signal,
       });
 
@@ -96,17 +140,13 @@ export function JumaChat() {
           setMessages((prev) => [...prev, { type: 'bot', text: data.messages[i] }]);
         }
       } else {
-        setMessages((prev) => [
-          ...prev,
-          { type: 'bot', text: 'Desculpa, tive um probleminha aqui. Tenta de novo?' },
-        ]);
+        const errMsg = language === 'en' ? 'Sorry, had a little issue. Try again?' : 'Desculpa, tive um probleminha aqui. Tenta de novo?';
+        setMessages((prev) => [...prev, { type: 'bot', text: errMsg }]);
       }
     } catch (err) {
       console.error('JumaChat error:', err);
-      setMessages((prev) => [
-        ...prev,
-        { type: 'bot', text: 'Ops, algo deu errado. Tenta de novo daqui a pouco?' },
-      ]);
+      const errMsg = language === 'en' ? 'Oops, something went wrong. Try again in a bit?' : 'Ops, algo deu errado. Tenta de novo daqui a pouco?';
+      setMessages((prev) => [...prev, { type: 'bot', text: errMsg }]);
     }
 
     setLoading(false);
@@ -134,6 +174,10 @@ export function JumaChat() {
     }
     return <>{text}</>;
   }
+
+  const placeholder = language === 'en' ? 'Type your message...' : 'Digite sua mensagem...';
+  const typingText = language === 'en' ? 'typing...' : 'digitando...';
+  const subtitle = language === 'en' ? "Jonathan's Assistant" : 'Assistente do Jonathan';
 
   return (
     <>
@@ -208,7 +252,7 @@ export function JumaChat() {
               </div>
               <div>
                 <div style={{ color: 'white', fontWeight: 600, fontSize: 14 }}>Juma</div>
-                <div style={{ color: '#aaa', fontSize: 11 }}>Assistente do Jonathan</div>
+                <div style={{ color: '#aaa', fontSize: 11 }}>{subtitle}</div>
               </div>
             </div>
             <button
@@ -265,7 +309,7 @@ export function JumaChat() {
                   fontSize: 14,
                 }}
               >
-                digitando...
+                {typingText}
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -284,7 +328,7 @@ export function JumaChat() {
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite sua mensagem..."
+              placeholder={placeholder}
               style={{
                 flex: 1,
                 padding: '10px 14px',

@@ -201,11 +201,32 @@ async function buildSystemPrompt(clientId) {
   return prompt;
 }
 
+function getLanguageInstruction(lang) {
+  if (lang === 'en') {
+    return '\n\nIDIOMA: Responda SEMPRE em inglês. Adapte seu tom para ser natural em inglês, como se estivesse no iMessage. Mantenha a mesma personalidade e regras.';
+  }
+  return '';
+}
+
+const GREETINGS = {
+  pt: {
+    new: ['Oi 😊 eu sou a Juma, assistente do Jonathan.', 'Me conta rapidinho, você trabalha com o quê?'],
+    returning: 'Você é Juma, assistente do Jonathan. Um cliente que já conversou com você antes está voltando. Gere uma saudação curta e calorosa mostrando que você lembra dele. Use [BREAK] para separar mensagens curtas. Texto puro, sem markdown.',
+  },
+  en: {
+    new: ['Hey 😊 I\'m Juma, Jonathan\'s assistant.', 'Quick question — what do you do for work?'],
+    returning: 'You are Juma, Jonathan\'s assistant. A client who has chatted with you before is coming back. Generate a short, warm greeting showing you remember them. Use [BREAK] to separate short messages. Plain text, no markdown. Respond in English.',
+  },
+};
+
 // --- Greeting endpoint ---
 app.post('/webhook/greeting', async (req, res) => {
   try {
-    const { sessionId } = req.body;
+    const { sessionId, language } = req.body;
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
+
+    const lang = language === 'en' ? 'en' : 'pt';
+    const greet = GREETINGS[lang];
 
     const memory = await getClientMemory(sessionId);
     const userMsgCount = await countUserMsgs(sessionId);
@@ -214,36 +235,31 @@ app.post('/webhook/greeting', async (req, res) => {
       const result = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 150,
-        system: 'Você é Juma, assistente do Jonathan. Um cliente que já conversou com você antes está voltando. Gere uma saudação curta e calorosa mostrando que você lembra dele. Use [BREAK] para separar mensagens curtas. Texto puro, sem markdown.',
-        messages: [{ role: 'user', content: `Informações sobre este cliente: ${memory}. Gere a saudação.` }],
+        system: greet.returning,
+        messages: [{ role: 'user', content: `Client info: ${memory}. Generate the greeting.` }],
       });
 
       const parts = result.content[0].text.split('[BREAK]').map((p) => p.trim()).filter((p) => p.length > 0);
       res.json({ returning: true, messages: parts });
     } else {
-      res.json({
-        returning: false,
-        messages: ['Oi 😊 eu sou a Juma, assistente do Jonathan.', 'Me conta rapidinho, você trabalha com o quê?'],
-      });
+      res.json({ returning: false, messages: greet.new });
     }
   } catch (error) {
     console.error('Greeting error:', error.message);
-    res.json({
-      returning: false,
-      messages: ['Oi 😊 eu sou a Juma, assistente do Jonathan.', 'Me conta rapidinho, você trabalha com o quê?'],
-    });
+    const lang = req.body.language === 'en' ? 'en' : 'pt';
+    res.json({ returning: false, messages: GREETINGS[lang].new });
   }
 });
 
 // --- Chat endpoint ---
 app.post('/webhook/chat', async (req, res) => {
   try {
-    const { sessionId, message } = req.body;
+    const { sessionId, message, language } = req.body;
     if (!sessionId || !message) return res.status(400).json({ error: 'sessionId and message are required' });
 
     await saveMessage(sessionId, 'user', message);
     const messages = await getClientMessages(sessionId);
-    const systemPrompt = await buildSystemPrompt(sessionId);
+    const systemPrompt = await buildSystemPrompt(sessionId) + getLanguageInstruction(language);
 
     const completion = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
