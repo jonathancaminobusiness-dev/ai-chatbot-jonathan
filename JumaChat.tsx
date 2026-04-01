@@ -16,60 +16,28 @@ function getSessionId(): string {
   return id;
 }
 
-// Detect language from the site
-function detectLanguage(): string {
-  // Check html lang attribute
-  const htmlLang = document.documentElement.lang?.toLowerCase();
-  if (htmlLang?.startsWith('en')) return 'en';
-  if (htmlLang?.startsWith('pt')) return 'pt';
 
-  // Check for common language toggle patterns in the page
-  const body = document.body.innerText?.toLowerCase() || '';
-  const enKeywords = ['services', 'about us', 'contact', 'pricing', 'get started'];
-  const ptKeywords = ['serviços', 'sobre nós', 'contato', 'preços', 'começar'];
-
-  const enScore = enKeywords.filter((k) => body.includes(k)).length;
-  const ptScore = ptKeywords.filter((k) => body.includes(k)).length;
-
-  return enScore > ptScore ? 'en' : 'pt';
+interface JumaChatProps {
+  language?: 'pt' | 'en';
 }
 
-export function JumaChat() {
+export function JumaChat({ language = 'pt' }: JumaChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [greeted, setGreeted] = useState(false);
-  const [language, setLanguage] = useState('pt');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionId = useRef(getSessionId());
 
-  // Re-detect language whenever chat opens
   useEffect(() => {
-    if (isOpen) {
-      const lang = detectLanguage();
-      setLanguage(lang);
-
-      if (!greeted) {
-        setGreeted(true);
-        fetchGreeting(lang);
-      }
-      inputRef.current?.focus();
+    if (isOpen && !greeted) {
+      setGreeted(true);
+      fetchGreeting(language);
     }
-  }, [isOpen, greeted]);
-
-  // Also watch for language changes while chat is open
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      if (isOpen) {
-        const lang = detectLanguage();
-        setLanguage(lang);
-      }
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-    return () => observer.disconnect();
-  }, [isOpen]);
+    if (isOpen) inputRef.current?.focus();
+  }, [isOpen, greeted, language]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
