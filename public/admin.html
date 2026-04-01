@@ -1,260 +1,108 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="light" lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juma - Painel de Aprendizados</title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Juma - Aprendizados</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "background": "#fdf9f4",
+            "surface-container": "#f1ede8",
+            "error": "#ba1a1a",
+            "tertiary": "#006a69",
+            "tertiary-container": "#00acab",
+            "on-surface-variant": "#59413c",
+            "primary-container": "#ff6b4a",
+            "surface-container-low": "#f7f3ee",
+            "surface-container-high": "#ece7e3",
+            "surface-container-highest": "#e6e2dd",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#1c1c19",
+            "on-primary": "#ffffff",
+            "outline-variant": "#e1bfb8",
+            "primary": "#ff6b4a",
+            "on-error": "#ffffff",
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Work Sans"],
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
-      min-height: 100vh;
-      padding: 32px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .header .avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #25D366;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 22px;
-      color: white;
-    }
-    .header h1 {
-      font-size: 24px;
-      color: white;
-    }
-    .header p {
-      color: #888;
-      font-size: 14px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-card {
-      background: #161616;
-      border: 1px solid #222;
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .stat-card .label {
-      font-size: 12px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .stat-card .value {
-      font-size: 32px;
-      font-weight: 700;
-      color: white;
-    }
-    .stat-card.eficaz { border-left: 4px solid #25D366; }
-    .stat-card.melhorar { border-left: 4px solid #f59e0b; }
-    .stat-card.objecao { border-left: 4px solid #ef4444; }
-    .stat-card.total { border-left: 4px solid #3b82f6; }
-
-    .chart-section {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 32px;
-    }
-    @media (max-width: 768px) {
-      .chart-section { grid-template-columns: 1fr; }
-    }
-    .chart-card {
-      background: #161616;
-      border: 1px solid #222;
-      border-radius: 12px;
-      padding: 24px;
-    }
-    .chart-card h3 {
-      font-size: 16px;
-      color: white;
-      margin-bottom: 20px;
-    }
-
-    .bar-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
-      height: 180px;
-      padding-top: 10px;
-    }
-    .bar-group {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100%;
-      justify-content: flex-end;
-    }
-    .bar {
-      width: 100%;
-      max-width: 60px;
-      border-radius: 6px 6px 0 0;
-      min-height: 4px;
-      transition: height 0.5s ease;
-    }
-    .bar.eficaz { background: #25D366; }
-    .bar.melhorar { background: #f59e0b; }
-    .bar.objecao { background: #ef4444; }
-    .bar-label {
-      font-size: 11px;
-      color: #888;
-      margin-top: 8px;
-      text-align: center;
-    }
-    .bar-value {
-      font-size: 13px;
-      color: white;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-
-    .donut-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-    }
-    .donut-svg { width: 160px; height: 160px; }
-    .donut-legend {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-    }
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    .learnings-section {
-      margin-top: 16px;
-    }
-    .learnings-section h2 {
-      font-size: 18px;
-      color: white;
-      margin-bottom: 16px;
-    }
-    .filter-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .filter-tab {
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid #333;
-      background: transparent;
-      color: #aaa;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s;
-    }
-    .filter-tab:hover { border-color: #555; color: white; }
-    .filter-tab.active { background: #25D366; border-color: #25D366; color: white; }
-
-    .learning-card {
-      background: #161616;
-      border: 1px solid #222;
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 10px;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-    }
-    .learning-badge {
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .learning-badge.eficaz { background: rgba(37,211,102,0.15); color: #25D366; }
-    .learning-badge.melhorar { background: rgba(245,158,11,0.15); color: #f59e0b; }
-    .learning-badge.objecao { background: rgba(239,68,68,0.15); color: #ef4444; }
-    .learning-text {
-      font-size: 14px;
-      line-height: 1.5;
-      color: #ccc;
-    }
-    .learning-date {
-      font-size: 11px;
-      color: #555;
-      margin-top: 6px;
-    }
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #555;
-    }
-    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
-    .empty-state p { font-size: 15px; }
-    a { color: #25D366; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .nav { margin-bottom: 32px; display: flex; gap: 16px; font-size: 14px; }
-    .nav a { padding: 6px 14px; border-radius: 8px; background: #161616; border: 1px solid #222; }
-    .nav a:hover, .nav a.active { background: #25D366; border-color: #25D366; color: white; text-decoration: none; }
+    body { font-family: 'Work Sans', sans-serif; }
+    h1, h2, h3, h4, .font-headline { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    @media (max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0 !important; } }
   </style>
 </head>
-<body>
+<body class="bg-background text-on-surface min-h-screen">
 
-  <div class="header">
-    <div class="avatar">J</div>
-    <div>
-      <h1>Painel de Aprendizados</h1>
-      <p>Juma - Assistente do Jonathan</p>
+  <!-- Sidebar -->
+  <aside class="sidebar fixed left-0 top-0 h-full flex flex-col p-4 w-64 bg-stone-100 border-r-0 z-50">
+    <div class="flex items-center gap-3 mb-10 px-2">
+      <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-stone-900 leading-tight">Juma</h1>
+        <p class="text-xs font-medium text-stone-500 tracking-tight">Assistente do Jonathan</p>
+      </div>
     </div>
-  </div>
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-3 px-4 py-3 bg-[#ff6b4a]/10 text-[#ff6b4a] rounded-lg font-semibold transition-colors" href="/admin">
+        <span class="material-symbols-outlined">psychology</span>
+        <span>Aprendizados</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-stone-600 hover:bg-stone-200 rounded-lg font-semibold transition-colors" href="/admin/clients">
+        <span class="material-symbols-outlined">group</span>
+        <span>Clientes</span>
+      </a>
+    </nav>
+  </aside>
 
-  <div class="nav">
-    <a href="/admin" class="active">Aprendizados</a>
-    <a href="/admin/clients">Clientes</a>
-  </div>
+  <!-- Main Content -->
+  <main class="main-content ml-64 min-h-screen">
+    <div class="p-10 space-y-12">
 
-  <div class="stats" id="stats"></div>
+      <!-- Page Header -->
+      <section>
+        <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Aprendizados</h2>
+        <p class="text-on-surface-variant font-body mt-2">Insights que a Juma aprendeu nas conversas com clientes.</p>
+      </section>
 
-  <div class="chart-section">
-    <div class="chart-card">
-      <h3>Distribuição por Tipo</h3>
-      <div class="donut-container" id="donut-chart"></div>
+      <!-- Stats -->
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="stats"></section>
+
+      <!-- Charts -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-5 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+          <h4 class="font-headline font-bold text-lg mb-8">Distribuicao de Status</h4>
+          <div id="donut-chart" class="flex items-center justify-center relative py-6"></div>
+          <div id="donut-legend" class="mt-8 space-y-3"></div>
+        </div>
+        <div class="lg:col-span-7 bg-surface-container-lowest p-8 rounded-xl shadow-sm">
+          <h4 class="font-headline font-bold text-lg mb-10">Categorias</h4>
+          <div id="bar-chart" class="space-y-6"></div>
+        </div>
+      </section>
+
+      <!-- Filters -->
+      <section class="flex flex-wrap items-center gap-3" id="filters"></section>
+
+      <!-- Learning Cards -->
+      <section class="grid grid-cols-1 gap-4" id="learnings-list"></section>
+
     </div>
-    <div class="chart-card">
-      <h3>Aprendizados por Categoria</h3>
-      <div class="bar-chart" id="bar-chart"></div>
-    </div>
-  </div>
-
-  <div class="learnings-section">
-    <h2>Todos os Aprendizados</h2>
-    <div class="filter-tabs" id="filters"></div>
-    <div id="learnings-list"></div>
-  </div>
+  </main>
 
   <script>
     let allLearnings = [];
@@ -267,130 +115,161 @@
         render();
       } catch {
         document.getElementById('learnings-list').innerHTML =
-          '<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar dados</p></div>';
+          '<div class="text-center py-16 text-on-surface-variant"><span class="material-symbols-outlined text-5xl block mb-4">error</span><p>Erro ao carregar dados</p></div>';
       }
     }
 
     function render() {
-      const eficaz = allLearnings.filter((l) => l.type === 'EFICAZ').length;
-      const melhorar = allLearnings.filter((l) => l.type === 'MELHORAR').length;
-      const objecao = allLearnings.filter((l) => l.type === 'OBJEÇÃO' || l.type === 'OBJECAO').length;
+      const eficaz = allLearnings.filter(l => l.type === 'EFICAZ').length;
+      const melhorar = allLearnings.filter(l => l.type === 'MELHORAR').length;
+      const objecao = allLearnings.filter(l => l.type === 'OBJEÇÃO' || l.type === 'OBJECAO').length;
       const total = allLearnings.length;
 
-      // Stats
-      document.getElementById('stats').innerHTML = `
-        <div class="stat-card total"><div class="label">Total</div><div class="value">${total}</div></div>
-        <div class="stat-card eficaz"><div class="label">Eficaz</div><div class="value">${eficaz}</div></div>
-        <div class="stat-card melhorar"><div class="label">A Melhorar</div><div class="value">${melhorar}</div></div>
-        <div class="stat-card objecao"><div class="label">Objeções</div><div class="value">${objecao}</div></div>
-      `;
-
-      // Donut chart
-      renderDonut(eficaz, melhorar, objecao, total);
-
-      // Bar chart
+      renderStats(total, eficaz, melhorar, objecao);
+      renderDonut(total, eficaz, melhorar, objecao);
       renderBars(eficaz, melhorar, objecao);
-
-      // Filters
-      document.getElementById('filters').innerHTML = `
-        <button class="filter-tab active" onclick="filter('all', this)">Todos (${total})</button>
-        <button class="filter-tab" onclick="filter('EFICAZ', this)">Eficaz (${eficaz})</button>
-        <button class="filter-tab" onclick="filter('MELHORAR', this)">Melhorar (${melhorar})</button>
-        <button class="filter-tab" onclick="filter('OBJEÇÃO', this)">Objeções (${objecao})</button>
-      `;
-
+      renderFilters(total, eficaz, melhorar, objecao);
       renderList(allLearnings);
     }
 
-    function renderDonut(e, m, o, total) {
-      const container = document.getElementById('donut-chart');
-      if (total === 0) {
-        container.innerHTML = '<div class="empty-state"><p>Sem dados ainda</p></div>';
-        return;
-      }
-
-      const r = 60, cx = 80, cy = 80, stroke = 18;
-      const circumference = 2 * Math.PI * r;
-      const segments = [
-        { value: e, color: '#25D366', label: 'Eficaz' },
-        { value: m, color: '#f59e0b', label: 'Melhorar' },
-        { value: o, color: '#ef4444', label: 'Objeções' },
-      ];
-
-      let offset = 0;
-      let paths = '';
-      segments.forEach((seg) => {
-        const pct = seg.value / total;
-        const dash = pct * circumference;
-        paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" />`;
-        offset += dash;
-      });
-
-      const legend = segments
-        .map((s) => `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.label}: ${s.value} (${total > 0 ? Math.round((s.value / total) * 100) : 0}%)</div>`)
-        .join('');
-
-      container.innerHTML = `
-        <svg class="donut-svg" viewBox="0 0 160 160">${paths}<text x="${cx}" y="${cy}" text-anchor="middle" dy="6" fill="white" font-size="22" font-weight="700">${total}</text></svg>
-        <div class="donut-legend">${legend}</div>
+    function renderStats(total, eficaz, melhorar, objecao) {
+      const pctEficaz = total > 0 ? Math.round((eficaz / total) * 100) : 0;
+      document.getElementById('stats').innerHTML = `
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#ff6b4a] opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Total</p>
+          <h3 class="text-5xl font-extrabold text-[#ff6b4a] font-headline tracking-tighter">${total}</h3>
+        </div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-tertiary-container opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Eficaz</p>
+          <h3 class="text-5xl font-extrabold text-tertiary font-headline tracking-tighter">${eficaz}</h3>
+          <div class="mt-4 flex items-center text-xs text-tertiary font-semibold">
+            <span class="material-symbols-outlined text-sm mr-1">check_circle</span>
+            <span>Taxa de ${pctEficaz}%</span>
+          </div>
+        </div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#ff6b4a] opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">A Melhorar</p>
+          <h3 class="text-5xl font-extrabold text-[#ff6b4a] font-headline tracking-tighter">${melhorar}</h3>
+          <div class="mt-4 flex items-center text-xs text-[#ff6b4a] font-semibold">
+            <span class="material-symbols-outlined text-sm mr-1">edit_note</span>
+            <span>Pontos de melhoria</span>
+          </div>
+        </div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-error opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Objecoes</p>
+          <h3 class="text-5xl font-extrabold text-error font-headline tracking-tighter">${objecao}</h3>
+          <div class="mt-4 flex items-center text-xs text-error font-semibold">
+            <span class="material-symbols-outlined text-sm mr-1">warning</span>
+            <span>Objecoes dos clientes</span>
+          </div>
+        </div>
       `;
     }
 
-    function renderBars(e, m, o) {
-      const container = document.getElementById('bar-chart');
-      const max = Math.max(e, m, o, 1);
-      const items = [
-        { value: e, cls: 'eficaz', label: 'Eficaz' },
-        { value: m, cls: 'melhorar', label: 'Melhorar' },
-        { value: o, cls: 'objecao', label: 'Objeções' },
-      ];
+    function renderDonut(total, eficaz, melhorar, objecao) {
+      const container = document.getElementById('donut-chart');
+      const legend = document.getElementById('donut-legend');
+      if (total === 0) {
+        container.innerHTML = '<p class="text-on-surface-variant text-sm">Sem dados ainda</p>';
+        return;
+      }
 
-      container.innerHTML = items
-        .map((i) => `
-          <div class="bar-group">
-            <div class="bar-value">${i.value}</div>
-            <div class="bar ${i.cls}" style="height: ${Math.max((i.value / max) * 140, 4)}px"></div>
-            <div class="bar-label">${i.label}</div>
-          </div>
-        `)
-        .join('');
+      const circ = 2 * Math.PI * 80;
+      const ePct = eficaz / total, mPct = melhorar / total, oPct = objecao / total;
+      const eLen = ePct * circ, mLen = mPct * circ, oLen = oPct * circ;
+
+      container.innerHTML = `
+        <svg class="w-48 h-48 transform -rotate-90" viewBox="0 0 192 192">
+          <circle cx="96" cy="96" r="80" fill="transparent" stroke="#e6e2dd" stroke-width="24"/>
+          <circle cx="96" cy="96" r="80" fill="transparent" stroke="#006a69" stroke-width="24" stroke-dasharray="${eLen} ${circ - eLen}" stroke-dashoffset="0"/>
+          <circle cx="96" cy="96" r="80" fill="transparent" stroke="#ff6b4a" stroke-width="24" stroke-dasharray="${mLen} ${circ - mLen}" stroke-dashoffset="${-eLen}"/>
+          <circle cx="96" cy="96" r="80" fill="transparent" stroke="#ba1a1a" stroke-width="24" stroke-dasharray="${oLen} ${circ - oLen}" stroke-dashoffset="${-(eLen + mLen)}"/>
+        </svg>
+        <div class="absolute flex flex-col items-center">
+          <span class="text-3xl font-black text-on-surface">${total}</span>
+          <span class="text-xs font-semibold text-on-surface-variant uppercase">Total</span>
+        </div>
+      `;
+
+      legend.innerHTML = `
+        <div class="flex justify-between items-center text-sm"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-tertiary"></div><span>Eficaz</span></div><span class="font-bold">${Math.round(ePct * 100)}%</span></div>
+        <div class="flex justify-between items-center text-sm"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-[#ff6b4a]"></div><span>A Melhorar</span></div><span class="font-bold">${Math.round(mPct * 100)}%</span></div>
+        <div class="flex justify-between items-center text-sm"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-error"></div><span>Objecoes</span></div><span class="font-bold">${Math.round(oPct * 100)}%</span></div>
+      `;
     }
 
-    function filter(type, btn) {
-      document.querySelectorAll('.filter-tab').forEach((t) => t.classList.remove('active'));
-      btn.classList.add('active');
+    function renderBars(eficaz, melhorar, objecao) {
+      const max = Math.max(eficaz, melhorar, objecao, 1);
+      document.getElementById('bar-chart').innerHTML = `
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant"><span>Eficaz</span><span>${eficaz}</span></div>
+          <div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-tertiary rounded-full transition-all" style="width:${(eficaz/max)*100}%"></div></div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant"><span>A Melhorar</span><span>${melhorar}</span></div>
+          <div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-[#ff6b4a] rounded-full transition-all" style="width:${(melhorar/max)*100}%"></div></div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-xs font-bold uppercase text-on-surface-variant"><span>Objecoes</span><span>${objecao}</span></div>
+          <div class="h-3 w-full bg-surface-container-highest rounded-full overflow-hidden"><div class="h-full bg-error rounded-full transition-all" style="width:${(objecao/max)*100}%"></div></div>
+        </div>
+      `;
+    }
 
-      if (type === 'all') {
-        renderList(allLearnings);
-      } else {
-        renderList(allLearnings.filter((l) => l.type === type || (type === 'OBJEÇÃO' && l.type === 'OBJECAO')));
-      }
+    function renderFilters(total, eficaz, melhorar, objecao) {
+      document.getElementById('filters').innerHTML = `
+        <button onclick="filterList('all', this)" class="filter-btn px-5 py-2.5 bg-[#ff6b4a] text-on-primary rounded-full text-sm font-semibold shadow-sm">Todos (${total})</button>
+        <button onclick="filterList('EFICAZ', this)" class="filter-btn px-5 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-colors">Eficaz (${eficaz})</button>
+        <button onclick="filterList('MELHORAR', this)" class="filter-btn px-5 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-colors">Melhorar (${melhorar})</button>
+        <button onclick="filterList('OBJEÇÃO', this)" class="filter-btn px-5 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-colors">Objecoes (${objecao})</button>
+      `;
+    }
+
+    function filterList(type, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.className = 'filter-btn px-5 py-2.5 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-colors';
+      });
+      btn.className = 'filter-btn px-5 py-2.5 bg-[#ff6b4a] text-on-primary rounded-full text-sm font-semibold shadow-sm';
+
+      if (type === 'all') renderList(allLearnings);
+      else renderList(allLearnings.filter(l => l.type === type || (type === 'OBJEÇÃO' && l.type === 'OBJECAO')));
     }
 
     function renderList(items) {
       const container = document.getElementById('learnings-list');
-
       if (items.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">🧠</div><p>Nenhum aprendizado ainda. Conforme clientes conversam com a Juma, ela aprende automaticamente.</p></div>';
+        container.innerHTML = `
+          <div class="text-center py-16 text-on-surface-variant">
+            <span class="material-symbols-outlined text-5xl block mb-4">psychology</span>
+            <p class="text-sm">Nenhum aprendizado ainda. Conforme clientes conversam com a Juma, ela aprende automaticamente.</p>
+          </div>`;
         return;
       }
 
-      container.innerHTML = items
-        .map((l) => {
-          const cls = l.type === 'EFICAZ' ? 'eficaz' : l.type === 'MELHORAR' ? 'melhorar' : 'objecao';
-          const label = l.type === 'EFICAZ' ? 'Eficaz' : l.type === 'MELHORAR' ? 'Melhorar' : 'Objeção';
-          const date = new Date(l.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-          return `
-            <div class="learning-card">
-              <div class="learning-badge ${cls}">${label}</div>
-              <div>
-                <div class="learning-text">${l.insight}</div>
-                <div class="learning-date">${date}</div>
+      container.innerHTML = items.map(l => {
+        const isEficaz = l.type === 'EFICAZ';
+        const isMelhorar = l.type === 'MELHORAR';
+        const borderColor = isEficaz ? 'border-tertiary' : isMelhorar ? 'border-[#ff6b4a]' : 'border-error';
+        const badgeBg = isEficaz ? 'bg-tertiary/10 text-tertiary' : isMelhorar ? 'bg-[#ff6b4a]/10 text-[#ff6b4a]' : 'bg-error/10 text-error';
+        const label = isEficaz ? 'Eficaz' : isMelhorar ? 'Melhorar' : 'Objecao';
+        const date = l.created_at ? new Date(l.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+
+        return `
+          <div class="bg-surface-container-lowest p-6 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 ${borderColor}">
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-3">
+                <span class="px-3 py-1 ${badgeBg} rounded-full text-xs font-bold tracking-tight uppercase">${label}</span>
+                <span class="text-xs text-on-surface-variant font-medium">${date}</span>
               </div>
             </div>
-          `;
-        })
-        .join('');
+            <p class="text-on-surface font-medium leading-relaxed max-w-4xl">${l.insight}</p>
+          </div>
+        `;
+      }).join('');
     }
 
     load();

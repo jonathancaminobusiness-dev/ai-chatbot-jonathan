@@ -1,278 +1,117 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html class="light" lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Juma - Memória dos Clientes</title>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Juma - Clientes</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            "background": "#fdf9f4",
+            "surface-container": "#f1ede8",
+            "error": "#ba1a1a",
+            "tertiary": "#006a69",
+            "tertiary-container": "#00acab",
+            "on-surface-variant": "#59413c",
+            "primary-container": "#ff6b4a",
+            "surface-container-low": "#f7f3ee",
+            "surface-container-high": "#ece7e3",
+            "surface-container-highest": "#e6e2dd",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#1c1c19",
+            "on-primary": "#ffffff",
+            "outline-variant": "#e1bfb8",
+            "primary": "#ff6b4a",
+          },
+          fontFamily: {
+            "headline": ["Manrope"],
+            "body": ["Work Sans"],
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
-      min-height: 100vh;
-      padding: 32px;
-    }
-    a { color: #25D366; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 8px;
-    }
-    .header .avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #25D366;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 22px;
-      color: white;
-    }
-    .header h1 { font-size: 24px; color: white; }
-    .header p { color: #888; font-size: 14px; }
-    .nav {
-      margin-bottom: 32px;
-      display: flex;
-      gap: 16px;
-      font-size: 14px;
-    }
-    .nav a {
-      padding: 6px 14px;
-      border-radius: 8px;
-      background: #161616;
-      border: 1px solid #222;
-    }
-    .nav a:hover, .nav a.active {
-      background: #25D366;
-      border-color: #25D366;
-      color: white;
-      text-decoration: none;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .stat-card {
-      background: #161616;
-      border: 1px solid #222;
-      border-radius: 12px;
-      padding: 20px;
-      border-left: 4px solid #25D366;
-    }
-    .stat-card .label {
-      font-size: 12px;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-    .stat-card .value {
-      font-size: 32px;
-      font-weight: 700;
-      color: white;
-    }
-    .stat-card.msgs { border-left-color: #3b82f6; }
-    .stat-card.active { border-left-color: #f59e0b; }
-
-    .client-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .client-card {
-      background: #161616;
-      border: 1px solid #222;
-      border-radius: 12px;
-      padding: 20px;
-      cursor: pointer;
-      transition: border-color 0.2s;
-    }
-    .client-card:hover { border-color: #25D366; }
-    .client-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .client-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #222;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-    .client-id {
-      font-size: 13px;
-      color: #888;
-      font-family: monospace;
-    }
-    .client-msgs-count {
-      font-size: 11px;
-      color: #25D366;
-      background: rgba(37,211,102,0.12);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-    .client-summary {
-      font-size: 14px;
-      line-height: 1.6;
-      color: #ccc;
-      margin-bottom: 12px;
-      padding: 12px;
-      background: #111;
-      border-radius: 8px;
-      border-left: 3px solid #25D366;
-    }
-    .client-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: #555;
-    }
-    .client-last-msg {
-      font-size: 13px;
-      color: #888;
-      margin-bottom: 10px;
-      font-style: italic;
-    }
-
-    /* Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      padding: 32px;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: #161616;
-      border: 1px solid #333;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 600px;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid #222;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-header h3 { font-size: 16px; color: white; }
-    .modal-close {
-      background: none;
-      border: none;
-      color: #888;
-      font-size: 22px;
-      cursor: pointer;
-    }
-    .modal-body {
-      padding: 20px;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .chat-msg {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    .chat-msg.user {
-      align-self: flex-end;
-      background: #25D366;
-      color: white;
-    }
-    .chat-msg.assistant {
-      align-self: flex-start;
-      background: #222;
-      color: #e0e0e0;
-    }
-    .chat-msg .time {
-      font-size: 10px;
-      color: rgba(255,255,255,0.4);
-      margin-top: 4px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #555;
-    }
-    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
-
-    .search-bar {
-      margin-bottom: 24px;
-    }
-    .search-bar input {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #161616;
-      color: white;
-      font-size: 14px;
-      outline: none;
-    }
-    .search-bar input:focus { border-color: #25D366; }
+    body { font-family: 'Work Sans', sans-serif; }
+    h1, h2, h3, h4, .font-headline { font-family: 'Manrope', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    @media (max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0 !important; } }
   </style>
 </head>
-<body>
+<body class="bg-background text-on-surface min-h-screen">
 
-  <div class="header">
-    <div class="avatar">J</div>
-    <div>
-      <h1>Memória dos Clientes</h1>
-      <p>Juma - Assistente do Jonathan</p>
-    </div>
-  </div>
-
-  <div class="nav">
-    <a href="/admin">Aprendizados</a>
-    <a href="/admin/clients" class="active">Clientes</a>
-  </div>
-
-  <div class="stats" id="stats"></div>
-
-  <div class="search-bar">
-    <input type="text" id="search" placeholder="Buscar por resumo ou ID do cliente..." oninput="filterClients(this.value)">
-  </div>
-
-  <div class="client-grid" id="client-grid"></div>
-
-  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3 id="modal-title">Histórico de Conversa</h3>
-        <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">&times;</button>
+  <!-- Sidebar -->
+  <aside class="sidebar fixed left-0 top-0 h-full flex flex-col p-4 w-64 bg-stone-100 border-r-0 z-50">
+    <div class="flex items-center gap-3 mb-10 px-2">
+      <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-on-primary">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
       </div>
-      <div class="modal-body" id="modal-body"></div>
+      <div>
+        <h1 class="text-2xl font-bold text-stone-900 leading-tight">Juma</h1>
+        <p class="text-xs font-medium text-stone-500 tracking-tight">Assistente do Jonathan</p>
+      </div>
+    </div>
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-3 px-4 py-3 text-stone-600 hover:bg-stone-200 rounded-lg font-semibold transition-colors" href="/admin">
+        <span class="material-symbols-outlined">psychology</span>
+        <span>Aprendizados</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 bg-[#ff6b4a]/10 text-[#ff6b4a] rounded-lg font-semibold transition-colors" href="/admin/clients">
+        <span class="material-symbols-outlined">group</span>
+        <span>Clientes</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center p-6" onclick="closeModal(event)">
+    <div class="bg-surface-container-lowest rounded-2xl w-full max-w-xl max-h-[80vh] flex flex-col shadow-2xl" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center p-6 border-b border-outline-variant/20">
+        <div>
+          <h3 class="font-headline font-bold text-lg" id="modal-title">Historico</h3>
+          <p class="text-xs text-on-surface-variant mt-1" id="modal-subtitle"></p>
+        </div>
+        <button onclick="document.getElementById('modal').classList.add('hidden');document.getElementById('modal').classList.remove('flex')" class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-full transition-colors">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-6 space-y-3" id="modal-body"></div>
     </div>
   </div>
+
+  <!-- Main Content -->
+  <main class="main-content ml-64 min-h-screen">
+    <div class="p-10 space-y-12">
+
+      <!-- Page Header -->
+      <section>
+        <h2 class="text-4xl font-extrabold tracking-tight font-headline text-on-surface">Clientes</h2>
+        <p class="text-on-surface-variant font-body mt-2">Memoria da Juma sobre cada cliente.</p>
+      </section>
+
+      <!-- Stats -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-6" id="stats"></section>
+
+      <!-- Search -->
+      <section>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-on-surface-variant">
+            <span class="material-symbols-outlined text-sm">search</span>
+          </span>
+          <input id="search" oninput="filterClients(this.value)" class="pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-sm focus:ring-2 focus:ring-[#ff6b4a] w-full max-w-md transition-all" placeholder="Buscar por resumo ou ID do cliente..." type="text"/>
+        </div>
+      </section>
+
+      <!-- Client Grid -->
+      <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="client-grid"></section>
+
+    </div>
+  </main>
 
   <script>
     let allClients = [];
@@ -285,23 +124,34 @@
         render();
       } catch {
         document.getElementById('client-grid').innerHTML =
-          '<div class="empty-state"><div class="icon">⚠️</div><p>Erro ao carregar dados</p></div>';
+          '<div class="col-span-full text-center py-16 text-on-surface-variant"><span class="material-symbols-outlined text-5xl block mb-4">error</span><p>Erro ao carregar dados</p></div>';
       }
     }
 
     function render() {
       const totalClients = allClients.length;
       const totalMsgs = allClients.reduce((s, c) => s + c.total_messages, 0);
-      const recent = allClients.filter((c) => {
+      const recent = allClients.filter(c => {
         const d = new Date(c.last_active);
-        const now = new Date();
-        return (now - d) < 24 * 60 * 60 * 1000;
+        return (Date.now() - d) < 24 * 60 * 60 * 1000;
       }).length;
 
       document.getElementById('stats').innerHTML = `
-        <div class="stat-card"><div class="label">Total Clientes</div><div class="value">${totalClients}</div></div>
-        <div class="stat-card msgs"><div class="label">Total Mensagens</div><div class="value">${totalMsgs}</div></div>
-        <div class="stat-card active"><div class="label">Ativos (24h)</div><div class="value">${recent}</div></div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#ff6b4a] opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Total Clientes</p>
+          <h3 class="text-5xl font-extrabold text-[#ff6b4a] font-headline tracking-tighter">${totalClients}</h3>
+        </div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-tertiary-container opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Total Mensagens</p>
+          <h3 class="text-5xl font-extrabold text-tertiary font-headline tracking-tighter">${totalMsgs}</h3>
+        </div>
+        <div class="bg-surface-container-low p-6 rounded-xl relative overflow-hidden hover:bg-surface-container-high transition-colors">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-tertiary opacity-5 blur-2xl rounded-full -mr-10 -mt-10"></div>
+          <p class="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-1">Ativos (24h)</p>
+          <h3 class="text-5xl font-extrabold text-on-surface font-headline tracking-tighter">${recent}</h3>
+        </div>
       `;
 
       renderCards(allClients);
@@ -309,29 +159,40 @@
 
     function renderCards(clients) {
       const grid = document.getElementById('client-grid');
-
       if (clients.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><div class="icon">👤</div><p>Nenhum cliente com memória ainda. Conforme clientes conversam com a Juma, eles aparecem aqui.</p></div>';
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-16 text-on-surface-variant">
+            <span class="material-symbols-outlined text-5xl block mb-4">group</span>
+            <p class="text-sm">Nenhum cliente com memoria ainda. Conforme clientes conversam com a Juma, eles aparecem aqui.</p>
+          </div>`;
         return;
       }
 
-      grid.innerHTML = clients.map((c) => {
+      grid.innerHTML = clients.map(c => {
         const shortId = c.id.substring(0, 8);
         const date = formatDate(c.last_active || c.updated_at);
-        const lastMsg = c.last_message ? (c.last_message.length > 60 ? c.last_message.substring(0, 60) + '...' : c.last_message) : '';
+        const lastMsg = c.last_message ? (c.last_message.length > 50 ? c.last_message.substring(0, 50) + '...' : c.last_message) : '';
+
         return `
-          <div class="client-card" onclick="openHistory('${c.id}')">
-            <div class="client-header">
-              <div class="client-avatar">👤</div>
-              <div>
-                <div class="client-id">${shortId}...</div>
+          <div class="bg-surface-container-lowest p-6 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-[#ff6b4a] group" onclick="openHistory('${c.id}')">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-surface-variant">person</span>
+                </div>
+                <div>
+                  <p class="text-xs font-mono text-on-surface-variant">${shortId}...</p>
+                </div>
               </div>
-              <div class="client-msgs-count">${c.total_messages} msgs</div>
+              <span class="px-3 py-1 bg-[#ff6b4a]/10 text-[#ff6b4a] rounded-full text-xs font-bold">${c.total_messages} msgs</span>
             </div>
-            <div class="client-summary">${c.summary}</div>
-            ${lastMsg ? `<div class="client-last-msg">"${lastMsg}"</div>` : ''}
-            <div class="client-meta">
-              <span>Última atividade: ${date}</span>
+            <div class="bg-surface-container-low p-4 rounded-lg border-l-2 border-tertiary mb-4">
+              <p class="text-sm text-on-surface leading-relaxed">${c.summary}</p>
+            </div>
+            ${lastMsg ? `<p class="text-xs text-on-surface-variant italic mb-3">"${lastMsg}"</p>` : ''}
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-on-surface-variant">${date}</span>
+              <span class="material-symbols-outlined text-on-surface-variant text-sm opacity-0 group-hover:opacity-100 transition-opacity">open_in_new</span>
             </div>
           </div>
         `;
@@ -340,49 +201,54 @@
 
     function filterClients(query) {
       const q = query.toLowerCase();
-      const filtered = allClients.filter((c) =>
-        c.summary.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)
-      );
-      renderCards(filtered);
+      renderCards(allClients.filter(c => c.summary.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)));
     }
 
     async function openHistory(clientId) {
       const modal = document.getElementById('modal');
       const body = document.getElementById('modal-body');
-      const title = document.getElementById('modal-title');
-
-      title.textContent = 'Histórico — ' + clientId.substring(0, 8) + '...';
-      body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Carregando...</div>';
-      modal.classList.add('open');
+      document.getElementById('modal-title').textContent = 'Historico de Conversa';
+      document.getElementById('modal-subtitle').textContent = clientId.substring(0, 8) + '...';
+      body.innerHTML = '<div class="text-center py-8 text-on-surface-variant"><span class="material-symbols-outlined animate-spin text-2xl">progress_activity</span></div>';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
 
       try {
         const res = await fetch('/admin/clients/' + clientId + '/history');
         const data = await res.json();
 
-        if (data.messages.length === 0) {
-          body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Sem mensagens</div>';
+        if (!data.messages || data.messages.length === 0) {
+          body.innerHTML = '<p class="text-center text-on-surface-variant py-8">Sem mensagens</p>';
           return;
         }
 
-        body.innerHTML = data.messages.map((m) => {
+        body.innerHTML = data.messages.map(m => {
+          const isUser = m.role === 'user';
           const time = formatDate(m.created_at);
           return `
-            <div class="chat-msg ${m.role}">
-              ${m.content}
-              <div class="time">${time}</div>
+            <div class="${isUser ? 'ml-auto' : 'mr-auto'} max-w-[80%]">
+              <div class="px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                isUser
+                  ? 'bg-[#ff6b4a] text-white rounded-tr-sm'
+                  : 'bg-surface-container-high text-on-surface rounded-tl-sm'
+              }">
+                ${m.content}
+              </div>
+              <p class="text-[10px] text-on-surface-variant mt-1 ${isUser ? 'text-right' : ''}">${time}</p>
             </div>
           `;
         }).join('');
 
         body.scrollTop = body.scrollHeight;
       } catch {
-        body.innerHTML = '<div style="color:#888;text-align:center;padding:20px">Erro ao carregar</div>';
+        body.innerHTML = '<p class="text-center text-on-surface-variant py-8">Erro ao carregar</p>';
       }
     }
 
     function closeModal(e) {
       if (e.target === e.currentTarget) {
-        document.getElementById('modal').classList.remove('open');
+        e.currentTarget.classList.add('hidden');
+        e.currentTarget.classList.remove('flex');
       }
     }
 
